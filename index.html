@@ -22,7 +22,7 @@
         <div class="max-w-[98%] mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
             <div class="text-center sm:text-left">
                 <h1 class="text-xl sm:text-2xl font-black tracking-tight">📈 台股五日強弱分析儀表板</h1>
-                <p class="text-xs text-slate-400 mt-1">（含 ETF 標的與 5 大技術指標）</p>
+                <p class="text-sm sm:text-base text-slate-200 mt-1 font-semibold">凡爸邏輯（含 ETF ）</p>
             </div>
 
             <!-- 右上角：指標標籤 + 統計 + 日期選擇器 -->
@@ -49,6 +49,11 @@
     </header>
 
     <main class="max-w-[98%] mx-auto px-2 sm:px-4 py-4 sm:py-6 flex-grow w-full">
+    <!-- 💡 這裡加入提示橫幅 -->
+        <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl text-xs sm:text-sm mb-5 flex items-center gap-2 shadow-sm">
+            <span class="text-base">💡</span>
+            <span><strong>篩選說明：</strong>已剔除成交金額 < 5 億元的標的。</span>
+        </div>
         <!-- 統計數據卡片：手機 2x2，電腦 4x1 -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5">
             <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
