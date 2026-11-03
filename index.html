@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>台股五日強弱分析全量儀表板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -10,34 +10,37 @@
         .stock-table th:hover { background-color: #334155; }
         .tab-btn.active { background-color: #2563eb; color: #ffffff; font-weight: 700; }
         .sort-icon { display: inline-block; margin-left: 4px; font-size: 0.75rem; color: #94a3b8; }
+        /* 自訂滾動條，讓手機滑動體驗更精緻 */
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
-    <header class="bg-slate-900 text-white p-5 shadow-md">
+    <!-- 頂部頁籤區 (RWD 適應) -->
+    <header class="bg-slate-900 text-white p-4 sm:p-5 shadow-md">
         <div class="max-w-[98%] mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-black">📈 台股五日強弱分析儀表板</h1>
-                <p class="text-xs text-slate-300 mt-1">（含 ETF）</p>
+            <div class="text-center sm:text-left">
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight">📈 台股五日強弱分析儀表板</h1>
+                <p class="text-xs text-slate-400 mt-1">（含 ETF 標的與 5 大技術指標）</p>
             </div>
 
-            <!-- 右上角：5大技術指標與個股ICON + 日期選擇 -->
-            <div class="flex flex-wrap items-center gap-3">
-                <!-- ICON 1: 5大技術指標 -->
-                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-emerald-400 font-bold shadow-sm">
+            <!-- 右上角：指標標籤 + 統計 + 日期選擇器 -->
+            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full lg:w-auto">
+                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs text-emerald-400 font-bold shadow-sm">
                     <span>⚡ 5 大技術指標</span>
                 </div>
 
-                <!-- ICON 2: 共 xx 檔個股 -->
-                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-blue-300 font-bold shadow-sm">
-                    <span>📊 共 <span id="header-total-count" class="text-white font-extrabold text-sm">0</span> 檔個股</span>
+                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs text-blue-300 font-bold shadow-sm">
+                    <span>📊 共 <span id="header-total-count" class="text-white font-extrabold text-sm">0</span> 檔</span>
                 </div>
 
                 <div class="h-6 w-[1px] bg-slate-700 hidden sm:block"></div>
 
-                <!-- 日期選擇器 -->
+                <!-- 日期切換 -->
                 <div class="flex items-center gap-2">
-                    <label class="text-sm font-bold text-blue-300">📅 切換日期：</label>
-                    <select id="dateSelect" onchange="changeDate(this.value)" class="bg-slate-800 text-white font-bold px-3 py-1.5 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="text-xs sm:text-sm font-bold text-blue-300">📅 切換日期：</label>
+                    <select id="dateSelect" onchange="changeDate(this.value)" class="bg-slate-800 text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="2026/11/03">2026/11/03</option><option value="2026/11/02">2026/11/02</option><option value="2026/10/30">2026/10/30</option><option value="2026/10/29">2026/10/29</option>
                     </select>
                 </div>
@@ -45,34 +48,46 @@
         </div>
     </header>
 
-    <main class="max-w-[98%] mx-auto px-4 py-6 flex-grow w-full">
-        <!-- 統計數據 -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-xl shadow-sm border"><p class="text-xs text-slate-500">當前篩選檔數</p><p id="stat-count" class="text-2xl font-black mt-1">0</p></div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border"><p class="text-xs text-slate-500">平均漲跌幅</p><p id="stat-avg-change" class="text-2xl font-black mt-1">0.00%</p></div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border"><p class="text-xs text-slate-500">總成交金額(億元)</p><p id="stat-total-amount" class="text-2xl font-black text-blue-600 mt-1">0.00</p></div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border"><p class="text-xs text-slate-500">上市 / 上櫃分佈</p><p id="stat-market-dist" class="text-lg font-bold mt-1">-</p></div>
-        </div>
-
-        <!-- 搜尋與過濾 -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <input type="text" id="searchInput" placeholder="搜尋 代號、名稱、概念股..." class="w-full md:w-80 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <div class="flex gap-2" id="market-btn-group">
-                <button onclick="setMarketFilter('all')" id="btn-mkt-all" class="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white">全部市場</button>
-                <button onclick="setMarketFilter('上市')" id="btn-mkt-上市" class="px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-700">上市</button>
-                <button onclick="setMarketFilter('上櫃')" id="btn-mkt-上櫃" class="px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-700">上櫃</button>
+    <main class="max-w-[98%] mx-auto px-2 sm:px-4 py-4 sm:py-6 flex-grow w-full">
+        <!-- 統計數據卡片：手機 2x2，電腦 4x1 -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5">
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs text-slate-500">當前篩選檔數</p>
+                <p id="stat-count" class="text-xl sm:text-2xl font-black mt-1 text-slate-800">0</p>
+            </div>
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs text-slate-500">平均漲跌幅</p>
+                <p id="stat-avg-change" class="text-xl sm:text-2xl font-black mt-1">0.00%</p>
+            </div>
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs text-slate-500">總成交金額(億)</p>
+                <p id="stat-total-amount" class="text-xl sm:text-2xl font-black text-blue-600 mt-1">0.00</p>
+            </div>
+            <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs text-slate-500">上市 / 上櫃分佈</p>
+                <p id="stat-market-dist" class="text-sm sm:text-lg font-bold mt-1 text-slate-700">-</p>
             </div>
         </div>
 
-        <!-- 分頁標籤 -->
-        <div class="flex flex-wrap gap-2 mb-4" id="tab-container"></div>
+        <!-- 搜尋與過濾列 -->
+        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 mb-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <input type="text" id="searchInput" placeholder="🔍 搜尋代號、名稱、概念股..." class="w-full sm:w-80 px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex w-full sm:w-auto justify-stretch sm:justify-end gap-2" id="market-btn-group">
+                <button onclick="setMarketFilter('all')" id="btn-mkt-all" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-blue-600 text-white transition">全部</button>
+                <button onclick="setMarketFilter('上市')" id="btn-mkt-上市" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">上市</button>
+                <button onclick="setMarketFilter('上櫃')" id="btn-mkt-上櫃" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">上櫃</button>
+            </div>
+        </div>
 
-        <!-- 表格 -->
-        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div class="overflow-x-auto max-h-[700px]">
-                <table class="w-full text-left border-collapse stock-table text-sm whitespace-nowrap">
+        <!-- 分頁標籤 (支援手機橫向滑動) -->
+        <div class="flex overflow-x-auto custom-scrollbar gap-2 mb-4 pb-1" id="tab-container"></div>
+
+        <!-- 表格容器：橫向滾動容器 (解決手機擠壓跑版問題) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto custom-scrollbar max-h-[65vh] sm:max-h-[700px]">
+                <table class="w-full text-left border-collapse stock-table text-xs sm:text-sm whitespace-nowrap">
                     <thead>
-                        <tr class="text-sm">
+                        <tr>
                             <th onclick="sortTable('市場別')" class="px-3 py-3">市場<span class="sort-icon" id="sort-市場別">↕</span></th>
                             <th onclick="sortTable('證券代號')" class="px-3 py-3">代號<span class="sort-icon" id="sort-證券代號">↕</span></th>
                             <th onclick="sortTable('證券名稱')" class="px-3 py-3">名稱<span class="sort-icon" id="sort-證券名稱">↕</span></th>
@@ -100,11 +115,10 @@
         let currentTab = Object.keys(stockData)[0] || '';
         let marketFilter = 'all';
 
-        // 排序狀態管理
         let currentSortCol = '';
         let currentSortAsc = true;
 
-        // 格式化百分比：對齊 Excel +0.00%;-0.00%;0.00%
+        // 格式化百分比：格式化為 +0.00%; -0.00%; 0.00%
         function formatPct(val) {
             const num = Number(val) || 0;
             if (num > 0) return `+${num.toFixed(2)}%`;
@@ -114,8 +128,8 @@
 
         function changeDate(d) {
             selectedDate = d;
-            stockData = allDatesData[selectedDate];
-            currentTab = Object.keys(stockData)[0];
+            stockData = allDatesData[selectedDate] || {};
+            currentTab = Object.keys(stockData)[0] || '';
             renderTabs();
             renderTable();
         }
@@ -126,9 +140,9 @@
                 const btn = document.getElementById(`btn-mkt-${type}`);
                 if (btn) {
                     if (type === m) {
-                        btn.className = "px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white";
+                        btn.className = "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-blue-600 text-white transition";
                     } else {
-                        btn.className = "px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-700";
+                        btn.className = "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
                     }
                 }
             });
@@ -150,7 +164,7 @@
             container.innerHTML = '';
             Object.keys(stockData).forEach(s => {
                 const btn = document.createElement('button');
-                btn.className = `tab-btn px-4 py-2 rounded-lg text-sm border transition ${s === currentTab ? 'active bg-blue-600 text-white' : 'bg-white text-slate-700'}`;
+                btn.className = `tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs sm:text-sm border transition ${s === currentTab ? 'active bg-blue-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`;
                 btn.innerText = s;
                 btn.onclick = () => { 
                     currentTab = s; 
@@ -169,7 +183,7 @@
 
             let data = [...rawData];
 
-            // 1. 市場別過濾
+            // 1. 市場過濾
             if (marketFilter !== 'all') {
                 data = data.filter(i => i['市場別'] === marketFilter);
             }
@@ -185,7 +199,7 @@
                 );
             }
 
-            // 3. 欄位排序
+            // 3. 排序
             if (currentSortCol) {
                 data.sort((a, b) => {
                     let valA = a[currentSortCol];
@@ -204,14 +218,14 @@
                 });
             }
 
-            // 更新排序 ICON 指示
+            // 更新排序箭頭 ICON
             document.querySelectorAll('.sort-icon').forEach(icon => icon.innerText = '↕');
             if (currentSortCol) {
                 const sortIcon = document.getElementById(`sort-${currentSortCol}`);
                 if (sortIcon) sortIcon.innerText = currentSortAsc ? '▲' : '▼';
             }
 
-            // 4. 計算與更新四個統計卡片
+            // 4. 計算並更新統計資料卡片
             const totalCount = data.length;
             let sumChange = 0;
             let sumAmount = 0;
@@ -234,7 +248,7 @@
             
             const avgChangeElem = document.getElementById('stat-avg-change');
             avgChangeElem.innerText = formatPct(avgChange);
-            avgChangeElem.className = `text-2xl font-black mt-1 ${avgChange > 0 ? 'text-red-600' : (avgChange < 0 ? 'text-emerald-600' : 'text-slate-800')}`;
+            avgChangeElem.className = `text-xl sm:text-2xl font-black mt-1 ${avgChange > 0 ? 'text-red-600' : (avgChange < 0 ? 'text-emerald-600' : 'text-slate-800')}`;
 
             document.getElementById('stat-total-amount').innerText = sumAmount.toFixed(2);
             document.getElementById('stat-market-dist').innerText = `上市 ${listedCount} / 上櫃 ${otcCount}`;
@@ -245,6 +259,7 @@
 
             data.forEach(item => {
                 const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
                 const chg = Number(item['漲跌幅']) || 0;
                 const color = chg > 0 ? 'text-red-600 font-bold' : (chg < 0 ? 'text-emerald-600 font-bold' : '');
                 
@@ -254,9 +269,9 @@
                     <td class="px-3 py-2 font-bold">${item['證券名稱']}</td>
                     <td class="px-3 py-2 text-right font-mono">${Number(item['收盤價']).toFixed(2)}</td>
                     <td class="px-3 py-2 text-right font-mono ${color}">${formatPct(chg)}</td>
-                    <td class="px-3 py-2 text-right font-mono text-blue-600">${Number(item['成交金額(億元)']||0).toFixed(2)}</td>
-                    <td class="px-3 py-2 text-right font-mono">${Number(item['最高價']||0).toFixed(2)}</td>
-                    <td class="px-3 py-2 text-right font-mono">${Number(item['最低價']||0).toFixed(2)}</td>
+                    <td class="px-3 py-2 text-right font-mono text-blue-600 font-bold">${Number(item['成交金額(億元)']||0).toFixed(2)}</td>
+                    <td class="px-3 py-2 text-right font-mono text-slate-600">${Number(item['最高價']||0).toFixed(2)}</td>
+                    <td class="px-3 py-2 text-right font-mono text-slate-600">${Number(item['最低價']||0).toFixed(2)}</td>
                     <td class="px-3 py-2 text-right font-mono text-slate-400">${Number(item['五日最高價']||0).toFixed(2)}</td>
                     <td class="px-3 py-2 text-right font-mono text-slate-400">${Number(item['五日最低價']||0).toFixed(2)}</td>
                     <td class="px-3 py-2 text-xs"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">${item['主要概念股']}</span></td>
